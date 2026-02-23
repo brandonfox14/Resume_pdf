@@ -641,11 +641,12 @@ ret_figs = retention_figs(ret_df)
 # ============================================================
 # 4-column job grid
 # ============================================================
-c1, c2, c3, c4 = st.columns(4, gap="large")
+row1 = st.columns(2, gap="large")
+row2 = st.columns(2, gap="large")
 
-# 1) Verona
+# Row 1
 job_box(
-    c1,
+    row1[0],
     "Verona Area High School",
     "JV Assistant Basketball Coach",
     "10/2024 to Present",
@@ -659,14 +660,12 @@ job_box(
     ],
 )
 
-# 2) March Metrics
-metrics_logo = ASSETS / "companies" / "metrics.png"
 job_box(
-    c2,
+    row1[1],
     "March Metrics",
     "Data Scientist",
     "08/2020 to Present",
-    metrics_logo,
+    ASSETS / "companies" / "metrics.png",
     pills=["NCAA Hoops", "Model evaluation", "AUC/ACC tracking"],
     fig_or_figs=mm_fig,
     bullets=[
@@ -675,35 +674,32 @@ job_box(
         "Total (O/U): AUC 0.854 • ACC 0.783 (2026 season).",
         "Avg (Win+Spread+OU): AUC 0.851 • ACC 0.792 (2026 season).",
     ],
-    footnote="Growth chart is simulated to show trend over time; 2021 and 2026 endpoints are fixed to the stated averages."
+    footnote="Growth chart is simulated; 2021 and 2026 endpoints fixed to the stated averages."
 )
 
-# 3) Sushi Primos
-sushi_logo = ASSETS / "companies" / "sushi.png"
+# Row 2
 job_box(
-    c3,
+    row2[0],
     "Sushi Primos",
     "Data Science Consultant (Site Selection)",
     "2024",
-    sushi_logo,
+    ASSETS / "companies" / "sushi.png",
     pills=["Location scoring", "Traffic + footfall", "Profit vs rent"],
     fig_or_figs=sushi_plot,
     bullets=[
         "Compared 4 candidate locations using rounded KPIs (traffic, foot traffic, customers, rent, residential, square footage).",
-        "Balanced predicted demand with rent constraints and operational fit (1-page executive decision support).",
-        "Preserved business comparative advantage by rounding and slightly altering values while maintaining relative ranking."
+        "Balanced predicted demand with rent constraints and operational fit (executive decision support).",
+        "Values are rounded and slightly altered to preserve confidentiality while maintaining ranking."
     ],
-    footnote="All location KPIs shown are rounded to the nearest 25 and slightly altered for confidentiality."
+    footnote="All KPIs are rounded to nearest 25 and slightly altered for confidentiality."
 )
 
-# 4) ISU retention demo
-isu_company_logo = ASSETS / "companies" / "isu.png"
 job_box(
-    c4,
+    row2[1],
     "Illinois State University",
     "Graduate Assistant — Data & Statistical Research (Personal Demo)",
     "2023–2024",
-    isu_company_logo,
+    ASSETS / "companies" / "isu.png",
     pills=["Synthetic demo", "Retention analysis", "Segmented insights"],
     fig_or_figs=ret_figs,
     bullets=[
@@ -711,10 +707,8 @@ job_box(
         "Education majors lead retention; STEM close behind; undecided lowest.",
         "In-state advantage is consistent; female advantage is modest but present."
     ],
-    footnote="Important: these charts use my own synthetic/demo data for portfolio purposes — not ISU data."
+    footnote="Important: these charts use my own synthetic/demo data — not ISU data."
 )
-
-st.write("")
 
 # ============================================================
 # Sushi mini-table (optional but useful on the page)
