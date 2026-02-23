@@ -95,7 +95,7 @@ st.markdown(
 # Header content (edit these)
 # -----------------------------
 NAME = "Brandon Fox"
-CONTACT = "Madison, WI • brandonfox14@icloud.com • (608) 516-9676 
+CONTACT = "Madison, WI • brandonfox14@icloud.com • (608) 516-9676" 
 
 st.markdown(f'<div class="name">{NAME}</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="contact">{CONTACT}</div>', unsafe_allow_html=True)
