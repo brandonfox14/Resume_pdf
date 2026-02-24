@@ -7,11 +7,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle, Arc
 
-# PDF generation (no browser automation)
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-
 # -----------------------------
 # Page config
 # -----------------------------
@@ -621,136 +616,67 @@ st.markdown(
 
 colA, colB = st.columns(2, gap="large")
 
-# ---- Option A: Browser Print dialog
-with colA:
-    st.markdown("**Option A (fastest): Print / Save as PDF**")
-    st.components.v1.html(
-        """
-        <button onclick="window.print()" style="
-          padding:10px 14px; border-radius:10px; border:1px solid rgba(49,51,63,0.25);
-          background:white; cursor:pointer; font-weight:600;">
-          Print / Save as PDF
-        </button>
-        <div style="font-size:12px; opacity:0.7; margin-top:6px;">
-          Choose “Save as PDF” in the print dialog.
-        </div>
-        """,
-        height=80
+st.markdown("---")
+st.markdown('<div class="box">', unsafe_allow_html=True)
+st.markdown('<div class="box-title">Export</div>', unsafe_allow_html=True)
+
+st.markdown(
+    '<div class="subtle">Fastest + most reliable: use your browser print dialog and choose “Save as PDF”. No extra packages needed.</div>',
+    unsafe_allow_html=True
+)
+
+# Print button (opens browser print dialog)
+st.components.v1.html(
+    """
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <button onclick="window.print()" style="
+        padding:10px 14px; border-radius:10px; border:1px solid rgba(49,51,63,0.25);
+        background:white; cursor:pointer; font-weight:600;">
+        Print / Save as PDF
+      </button>
+      <div style="font-size:12px; opacity:0.75;">
+        Tip: In the dialog choose <b>Destination → Save as PDF</b>. Set <b>Pages: 1</b> if needed.
+      </div>
+    </div>
+    """,
+    height=80
+)
+
+# Optional: also export key visuals as images
+st.markdown('<div class="subtle" style="margin-top:10px;">Optional: download the visuals as PNGs (for docs/portfolios).</div>', unsafe_allow_html=True)
+
+col1, col2, col3, col4 = st.columns(4, gap="small")
+
+def download_fig_png(col, fig, filename):
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=220, bbox_inches="tight")
+    col.download_button(
+        label=f"Download {filename}",
+        data=buf.getvalue(),
+        file_name=filename,
+        mime="image/png"
     )
 
-# ---- Option B: Generate a PDF file (ReportLab)
-def build_pdf(path: Path):
-    # Convert the 4 visuals into PNGs
-    # Re-create figs so they are not closed by earlier rendering
-    v_fig = verona_shot_fig(seed=42)
-    m_fig, _ = march_metrics_growth(seed=7)
-    s_fig = sushi_fig(sushi_df)
-    r_figs = retention_figs(ret_df)
-
-    v_png = fig_to_png_bytes(v_fig)
-    m_png = fig_to_png_bytes(m_fig)
-    s_png = fig_to_png_bytes(s_fig)
-
-    # For retention, stitch 4 small charts into one horizontal strip image by placing into the PDF directly
-    r_pngs = [fig_to_png_bytes(f) for f in r_figs]
-
-    c = canvas.Canvas(str(path), pagesize=letter)
-    W, H = letter
-
-    # Margins
-    margin = 36  # 0.5 inch
-    x0 = margin
-    y = H - margin
-
-    # Header
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(x0, y - 10, NAME)
-    c.setFont("Helvetica", 10)
-    c.drawString(x0, y - 28, CONTACT)
-    y -= 48
-
-    # Education line (simple text; logos optional here)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(x0, y, "Education")
-    y -= 16
-    c.setFont("Helvetica", 10)
-    c.drawString(x0, y, "University of Michigan — M.S. Applied Data Science (MADS)")
-    y -= 12
-    c.drawString(x0, y, "Illinois State University — (degree/major)")
-    y -= 18
-
-    # Layout 2x2 images
-    gap = 10
-    box_w = (W - 2*margin - gap) / 2
-    box_h = 210  # tuned for one page
-
-    def draw_box_title(title, subtitle, x, y_top):
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(x, y_top - 14, title)
-        c.setFont("Helvetica", 9)
-        c.drawString(x, y_top - 28, subtitle)
-
-    def draw_img(img_bytes, x, y_top, w, h):
-        img = ImageReader(io.BytesIO(img_bytes))
-        c.drawImage(img, x, y_top - h, width=w, height=h, preserveAspectRatio=True, mask='auto')
-
-    # Row 1
-    y_row1 = y
-    x_left = x0
-    x_right = x0 + box_w + gap
-
-    draw_box_title("Verona Area HS — JV Assistant Coach", "10/2024–Present", x_left, y_row1)
-    draw_img(v_png, x_left, y_row1 - 34, box_w, box_h - 34)
-
-    draw_box_title("March Metrics — Data Scientist", "08/2020–Present", x_right, y_row1)
-    draw_img(m_png, x_right, y_row1 - 34, box_w, box_h - 34)
-
-    # Row 2
-    y_row2 = y_row1 - box_h - 18
-    draw_box_title("Sushi Primos — DS Consultant", "2024 • rounded & slightly altered", x_left, y_row2)
-    draw_img(s_png, x_left, y_row2 - 34, box_w, box_h - 34)
-
-    draw_box_title("ISU — GA Research (Personal Demo)", "Synthetic portfolio data (not ISU data)", x_right, y_row2)
-    # place retention charts in a 2x2 within that box
-    # We draw them as 2 rows of 2 images
-    small_gap = 6
-    small_w = (box_w - small_gap) / 2
-    small_h = (box_h - 34 - small_gap) / 2
-
-    y_img_top = y_row2 - 34
-    draw_img(r_pngs[0], x_right, y_img_top, small_w, small_h)
-    draw_img(r_pngs[1], x_right + small_w + small_gap, y_img_top, small_w, small_h)
-    draw_img(r_pngs[2], x_right, y_img_top - small_h - small_gap, small_w, small_h)
-    draw_img(r_pngs[3], x_right + small_w + small_gap, y_img_top - small_h - small_gap, small_w, small_h)
-
-    c.showPage()
-    c.save()
-
-with colB:
-    st.markdown("**Option B: Generate PDF Download (no print dialog)**")
-    if st.button("Generate PDF file", type="primary"):
-        build_pdf(PDF_OUT)
-        st.success("PDF generated.")
-
-    if PDF_OUT.exists():
+with col1:
+    download_fig_png(col1, verona_shot_fig(seed=42), "verona_shot_chart.png")
+with col2:
+    download_fig_png(col2, march_metrics_growth(seed=7)[0], "march_metrics_growth.png")
+with col3:
+    download_fig_png(col3, sushi_fig(sushi_df), "sushi_location_tradeoffs.png")
+with col4:
+    # retention is 4 figs: zip them into one download isn’t worth it, so just give the 4 individually
+    st.write("Retention charts:")
+    rfs = retention_figs(ret_df)
+    for i, f in enumerate(rfs, start=1):
+        import io
+        buf = io.BytesIO()
+        f.savefig(buf, format="png", dpi=220, bbox_inches="tight")
         st.download_button(
-            label="Download visual_resume.pdf",
-            data=PDF_OUT.read_bytes(),
-            file_name="visual_resume.pdf",
-            mime="application/pdf"
+            label=f"Download retention_{i}.png",
+            data=buf.getvalue(),
+            file_name=f"retention_{i}.png",
+            mime="image/png"
         )
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-# Optional table
-with st.expander("Sushi Primos — Rounded KPI table (confidentiality-preserving)"):
-    show_cols = ["Location", "Traffic", "FootTraffic", "Customers", "Residential", "SqFt", "ProfitPreRent", "Rent", "ProfitMinusRent"]
-    st.dataframe(sushi_df[show_cols], use_container_width=True)
-    st.markdown(
-        """
-        <div class="subtle">
-        Targets: Traffic ≥ 1,000/day • Foot Traffic ≥ 250/day • Residential (0.5 mi) ≥ 3,500 • Rent &lt; $30,000/mo • SqFt 1,750–3,250.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
