@@ -1,7 +1,6 @@
 import streamlit as st
 from pathlib import Path
 import base64
-import io
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,7 +13,6 @@ st.set_page_config(page_title="Visual Resume", layout="wide")
 
 ROOT = Path(__file__).parent
 ASSETS = ROOT / "assets"
-PDF_OUT = ROOT / "visual_resume.pdf"
 
 # -----------------------------
 # Helpers
@@ -33,14 +31,8 @@ def safe_logo_html(path: Path, height_px: int = 30) -> str:
 def rounded25(x: float) -> int:
     return int(round(x / 25.0) * 25)
 
-def fig_to_png_bytes(fig, dpi=220) -> bytes:
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-    return buf.getvalue()
-
 # -----------------------------
-# Styling
+# Styling (includes print CSS)
 # -----------------------------
 st.markdown(
     """
@@ -80,13 +72,18 @@ st.markdown(
         font-size: 12px;
         opacity: 0.9;
       }
+
+      @media print {
+        .block-container { max-width: 1150px; padding: 0.5rem !important; }
+        header, footer, .stToolbar, .stDecoration { display: none !important; }
+      }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # -----------------------------
-# Header content
+# Header content (edit these)
 # -----------------------------
 NAME = "Brandon Fox"
 CONTACT = "Madison, WI • brandonfox14@icloud.com • (608) 516-9676"
@@ -95,7 +92,7 @@ st.markdown(f'<div class="name">{NAME}</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="contact">{CONTACT}</div>', unsafe_allow_html=True)
 
 # ============================================================
-# EDUCATION
+# EDUCATION (full width)
 # ============================================================
 st.markdown('<div class="box">', unsafe_allow_html=True)
 st.markdown('<div class="box-title">Education</div>', unsafe_allow_html=True)
@@ -127,7 +124,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.write("")
 
 # ============================================================
-# VIS 1: Verona half-court shot chart
+# VIS 1: Verona half-court shot chart w/ hot/cold zones
 # ============================================================
 def draw_half_court(ax):
     ax.set_xlim(-25, 25)
@@ -142,8 +139,10 @@ def draw_half_court(ax):
     ax.add_patch(Rectangle((-3, hoop_y-0.75), 6, 0.1, fill=True, linewidth=0))
 
     ax.add_patch(Rectangle((-8, 0), 16, 19, fill=False, linewidth=1.2))
+
     ax.add_patch(Arc((0, 19), 12, 12, theta1=0, theta2=180, linewidth=1.2))
     ax.add_patch(Arc((0, 19), 12, 12, theta1=180, theta2=360, linewidth=1.2, linestyle="--", alpha=0.6))
+
     ax.add_patch(Arc((0, hoop_y), 8, 8, theta1=0, theta2=180, linewidth=1.2))
 
     ax.plot([-22, -22], [0, 14], linewidth=1.2)
@@ -167,6 +166,7 @@ def assign_zone(x, y):
         return 0
     if (-8 <= x <= 8) and (0 <= y <= 19):
         return 1
+
     return 2
 
 def verona_shot_fig(seed=42):
@@ -176,6 +176,7 @@ def verona_shot_fig(seed=42):
     made_total = 24
     n_threes = 11
     made_threes = 4
+
     n_twos = n_shots - n_threes
     made_twos = made_total - made_threes  # 20
 
@@ -283,7 +284,7 @@ def verona_shot_fig(seed=42):
     return fig
 
 # ============================================================
-# VIS 2: March Metrics growth chart (AUC + ACC)
+# VIS 2: March Metrics growth chart (AUC + ACC) 2021–2026
 # ============================================================
 def march_metrics_growth(seed=7):
     rng = np.random.default_rng(seed)
@@ -334,7 +335,7 @@ def sushi_locations(seed=12):
         Customers=rounded25(125),
         ProfitPreRent=rounded25(40000),
         Rent=rounded25(24500),
-        Residential=rounded25(3500),  # placeholder baseline (rounded) for demo
+        Residential=rounded25(3500),
         SqFt=rounded25(1575),
     )
 
@@ -358,7 +359,7 @@ def sushi_locations(seed=12):
         prof = customers * ppc
         return rounded25(prof)
 
-    # Option A (Best Fit)
+    # A Best Fit
     A_traffic = rounded25(rng.uniform(1025, 1400))
     A_foot = rounded25(rng.uniform(275, 520))
     A_res = rounded25(rng.uniform(3750, 5200))
@@ -367,25 +368,25 @@ def sushi_locations(seed=12):
     A_cust = predict_customers(A_traffic, A_foot)
     A_profit = profit_pre_rent(A_cust)
 
-    # Option B (Too Big / Expensive; lower profit than best)
+    # B Too big / expensive, lower profit than best
     B_traffic = rounded25(rng.uniform(1050, 1350))
     B_foot = rounded25(rng.uniform(260, 480))
     B_res = rounded25(rng.uniform(3600, 4800))
-    B_sqft = rounded25(rng.uniform(3400, 4200))  # too big
-    B_rent = rounded25(rng.uniform(34000, 45000))  # too expensive
+    B_sqft = rounded25(rng.uniform(3400, 4200))
+    B_rent = rounded25(rng.uniform(34000, 45000))
     B_cust = predict_customers(B_traffic, B_foot)
     B_profit = rounded25(rng.uniform(A_profit * 0.78, A_profit * 0.92))
 
-    # Option C (Low Residential / High Foot)
+    # C Low residential / high foot traffic
     C_traffic = rounded25(rng.uniform(950, 1250))
     C_foot = rounded25(rng.uniform(700, 1050))
-    C_res = rounded25(rng.uniform(1200, 2400))  # too few people nearby
+    C_res = rounded25(rng.uniform(1200, 2400))
     C_sqft = rounded25(rng.uniform(1900, 3100))
     C_rent = rounded25(rng.uniform(24000, 31000))
     C_cust = predict_customers(C_traffic, C_foot)
     C_profit = profit_pre_rent(C_cust)
 
-    # Option D (Slightly low across; cheapest rent)
+    # D Slightly low on all, cheapest rent
     D_traffic = rounded25(rng.uniform(775, 975))
     D_foot = rounded25(rng.uniform(200, 245))
     D_res = rounded25(rng.uniform(3000, 3450))
@@ -407,27 +408,24 @@ def sushi_locations(seed=12):
     ])
 
     df["ProfitMinusRent"] = df["ProfitPreRent"] - df["Rent"]
-    checks = {
-        "Traffic": df["Traffic"] >= goals["Traffic"],
-        "FootTraffic": df["FootTraffic"] >= goals["FootTraffic"],
-        "Residential": df["Residential"] >= goals["Residential"],
-        "Rent": df["Rent"] < goals["Rent"],
-        "SqFt": df["SqFt"].between(goals["SqFt_min"], goals["SqFt_max"]),
-    }
-    for k, v in checks.items():
-        df[f"Meets_{k}"] = v
-
-    return df, goals
+    return df
 
 def sushi_fig(df):
     tmp = df[df["Location"] != "Current (Rounded)"].copy()
-    goal_cols = ["Meets_Traffic", "Meets_FootTraffic", "Meets_Residential", "Meets_Rent", "Meets_SqFt"]
-    tmp["GoalsMet"] = tmp[goal_cols].sum(axis=1)
+
+    goals_cols = []
+    tmp["MeetsTrafficGoal"] = tmp["Traffic"] >= 1000; goals_cols.append("MeetsTrafficGoal")
+    tmp["MeetsFootGoal"] = tmp["FootTraffic"] >= 250; goals_cols.append("MeetsFootGoal")
+    tmp["MeetsResGoal"] = tmp["Residential"] >= 3500; goals_cols.append("MeetsResGoal")
+    tmp["MeetsRentGoal"] = tmp["Rent"] < 30000; goals_cols.append("MeetsRentGoal")
+    tmp["MeetsSqFtGoal"] = tmp["SqFt"].between(1750, 3250); goals_cols.append("MeetsSqFtGoal")
+    tmp["GoalsMet"] = tmp[goals_cols].sum(axis=1)
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0), dpi=220)
     ax.scatter(tmp["GoalsMet"], tmp["ProfitMinusRent"])
     for _, r in tmp.iterrows():
-        ax.annotate(r["Location"].replace("Option ", ""), (r["GoalsMet"], r["ProfitMinusRent"]),
+        ax.annotate(r["Location"].replace("Option ", ""),
+                    (r["GoalsMet"], r["ProfitMinusRent"]),
                     textcoords="offset points", xytext=(6, 6), fontsize=8)
     ax.grid(True, linestyle="--", linewidth=0.6, alpha=0.6)
     ax.set_xlabel("Goals Met (out of 5)")
@@ -441,18 +439,15 @@ def sushi_fig(df):
 # ============================================================
 def retention_data():
     majors = ["Education", "STEM", "Undecided", "Other"]
-    groups = [
-        ("Female", "In-State"),
-        ("Male", "In-State"),
-        ("Female", "Out-of-State"),
-        ("Male", "Out-of-State"),
-    ]
+    groups = [("Female", "In-State"), ("Male", "In-State"), ("Female", "Out-of-State"), ("Male", "Out-of-State")]
+
     data = {
         ("Female", "In-State"):     [93, 90, 72, 84],
         ("Male", "In-State"):       [91, 92, 70, 82],
         ("Female", "Out-of-State"): [86, 84, 66, 78],
         ("Male", "Out-of-State"):   [83, 81, 60, 75],
     }
+
     df = pd.DataFrame(
         [{"Major": m, "Gender": g, "Residency": r, "Retention": data[(g, r)][i]}
          for i, m in enumerate(majors)
@@ -521,12 +516,12 @@ def job_box(col, company_name, job_title, dates, logo_path, pills, fig_or_figs, 
         st.markdown("</div>", unsafe_allow_html=True)
 
 # ============================================================
-# Build visuals
+# Build visuals once
 # ============================================================
 verona_fig = verona_shot_fig(seed=42)
-mm_fig, _ = march_metrics_growth(seed=7)
+mm_fig, _mm_df = march_metrics_growth(seed=7)
 
-sushi_df, sushi_goals = sushi_locations(seed=12)
+sushi_df = sushi_locations(seed=12)
 sushi_plot = sushi_fig(sushi_df)
 
 ret_df = retention_data()
@@ -603,29 +598,31 @@ job_box(
 )
 
 # ============================================================
-# Export (NO Playwright)
+# Sushi mini-table (optional)
+# ============================================================
+with st.expander("Sushi Primos — Rounded KPI table (confidentiality-preserving)"):
+    show_cols = ["Location", "Traffic", "FootTraffic", "Customers", "Residential", "SqFt", "ProfitPreRent", "Rent", "ProfitMinusRent"]
+    st.dataframe(sushi_df[show_cols], use_container_width=True)
+    st.markdown(
+        """
+        <div class="subtle">
+        Targets: Traffic ≥ 1,000/day • Foot Traffic ≥ 250/day • Residential (0.5 mi) ≥ 3,500 • Rent &lt; $30,000/mo • SqFt 1,750–3,250.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ============================================================
+# Export (NO playwright, NO reportlab)
 # ============================================================
 st.markdown("---")
 st.markdown('<div class="box">', unsafe_allow_html=True)
 st.markdown('<div class="box-title">Export</div>', unsafe_allow_html=True)
-
 st.markdown(
-    '<div class="subtle">Two options: (1) open your browser print dialog to “Save as PDF”, or (2) generate a one-page PDF download built from these visuals.</div>',
+    '<div class="subtle">Fastest + most reliable: open the browser print dialog and choose “Save as PDF”. No extra packages required.</div>',
     unsafe_allow_html=True
 )
 
-colA, colB = st.columns(2, gap="large")
-
-st.markdown("---")
-st.markdown('<div class="box">', unsafe_allow_html=True)
-st.markdown('<div class="box-title">Export</div>', unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="subtle">Fastest + most reliable: use your browser print dialog and choose “Save as PDF”. No extra packages needed.</div>',
-    unsafe_allow_html=True
-)
-
-# Print button (opens browser print dialog)
 st.components.v1.html(
     """
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -635,48 +632,46 @@ st.components.v1.html(
         Print / Save as PDF
       </button>
       <div style="font-size:12px; opacity:0.75;">
-        Tip: In the dialog choose <b>Destination → Save as PDF</b>. Set <b>Pages: 1</b> if needed.
+        In the dialog choose <b>Destination → Save as PDF</b>. Turn on <b>Background graphics</b>.
       </div>
     </div>
     """,
     height=80
 )
 
-# Optional: also export key visuals as images
-st.markdown('<div class="subtle" style="margin-top:10px;">Optional: download the visuals as PNGs (for docs/portfolios).</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtle" style="margin-top:10px;">Optional: download visuals as PNGs for a portfolio.</div>', unsafe_allow_html=True)
 
-col1, col2, col3, col4 = st.columns(4, gap="small")
+# Download visuals as images (optional)
+import io
 
-def download_fig_png(col, fig, filename):
-    import io
+def download_png_button(label, fig_maker, filename):
+    fig = fig_maker()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=220, bbox_inches="tight")
-    col.download_button(
-        label=f"Download {filename}",
-        data=buf.getvalue(),
-        file_name=filename,
-        mime="image/png"
-    )
+    plt.close(fig)
+    st.download_button(label=label, data=buf.getvalue(), file_name=filename, mime="image/png")
 
+col1, col2, col3, col4 = st.columns(4, gap="small")
 with col1:
-    download_fig_png(col1, verona_shot_fig(seed=42), "verona_shot_chart.png")
+    download_png_button("Download Verona chart", lambda: verona_shot_fig(seed=42), "verona_shot_chart.png")
 with col2:
-    download_fig_png(col2, march_metrics_growth(seed=7)[0], "march_metrics_growth.png")
+    download_png_button("Download Metrics growth", lambda: march_metrics_growth(seed=7)[0], "march_metrics_growth.png")
 with col3:
-    download_fig_png(col3, sushi_fig(sushi_df), "sushi_location_tradeoffs.png")
+    download_png_button("Download Sushi chart", lambda: sushi_fig(sushi_df), "sushi_location_tradeoffs.png")
 with col4:
-    # retention is 4 figs: zip them into one download isn’t worth it, so just give the 4 individually
     st.write("Retention charts:")
     rfs = retention_figs(ret_df)
     for i, f in enumerate(rfs, start=1):
-        import io
         buf = io.BytesIO()
         f.savefig(buf, format="png", dpi=220, bbox_inches="tight")
+        plt.close(f)
         st.download_button(
-            label=f"Download retention_{i}.png",
+            label=f"retention_{i}.png",
             data=buf.getvalue(),
             file_name=f"retention_{i}.png",
             mime="image/png"
         )
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+
